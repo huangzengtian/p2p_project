@@ -1,0 +1,14 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="001-p2p-parent:war">
+    <output-path>$PROJECT_DIR$/001-p2p-parent/target</output-path>
+    <properties id="maven-jee-properties">
+      <options>
+        <module>001-p2p-parent</module>
+        <packaging>war</packaging>
+      </options>
+    </properties>
+    <root id="archive" name="001-p2p-parent-1.0.0.war">
+      <element id="artifact" artifact-name="001-p2p-parent:war exploded" />
+    </root>
+  </artifact>
+</component>

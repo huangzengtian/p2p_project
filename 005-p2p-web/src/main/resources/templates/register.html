@@ -1,0 +1,272 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}"/>
+    <script language="javascript" th:src="@{/js/jquery-1.7.2.min.js}"></script>
+    <script type="text/javascript" th:src="@{/js/jQuery.md5.js}"></script>
+    <script type="text/javascript" th:src="@{/js/register.js}"></script>
+    <title>注册动力金融网-动力金融网,专业的互联网金融信息服务平台</title>
+    <style type="text/css">
+        .testBtn-a {
+            display: inline-block;
+            height: 40px;
+            line-height: 30px;
+            padding: 0 8px;
+            border: 0;
+            border-radius: 0px;
+            color: #fff;
+            background: rgb(65, 133, 244);
+            cursor: pointer;
+        }
+
+        .testBtn-a.on {
+            background: #c9c9c9;
+            color: #666;
+            cursor: default;
+        }
+    </style>
+    <script type="text/javascript">
+        jQuery(function ($) {
+            var $phone = $("#phone");
+            var $loginPassword = $("#loginPassword");
+            var $messageCode = $("#messageCode");
+
+            //手机号框失去焦点
+            $phone.blur(function () {
+                //非空验证
+                if (!$phone.val()) {
+                    showError("phone", "手机号不能为空");
+                    return;
+                }
+
+                //格式验证
+                if (!/^[1][0-9]{10}$/.test($phone.val())) {
+                    showError("phone", "手机号格式错误");
+                    return;
+                }
+
+                //手机号重复验证
+                $.ajax({
+                    url: "/user/queryExistByPhone?phone=" + $phone.val(),
+                    success: function (data) {
+                        if (data.code === 1) {
+                            showError("phone", data.msg);
+                        } else {
+                            //说明手机号合法且不重复
+                            showSuccess("phone");
+                        }
+                    },
+                    error: function () {
+                        showError("phone", "网络繁忙，请稍后再试");
+                    }
+                });
+
+            });
+
+            //密码框失去焦点
+            $loginPassword.blur(function () {
+                //非空验证
+                if (!$loginPassword.val()) {
+                    showError("loginPassword", "密码不能为空");
+                    return;
+                }
+
+                //格式验证，包含数字和字母且长度在6到16位之间
+                if (!/^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{6,20}$/.test($loginPassword.val())) {
+                    showError("loginPassword", "密码必须同时包含数字和字母，长度在6-20位");
+                    return;
+                }
+
+                showSuccess("loginPassword");
+            });
+
+            //验证码失去焦点
+            $messageCode.blur(function () {
+                if (!$messageCode.val()) {
+                    showError("messageCode", "验证码不能为空");
+                }
+            });
+
+            //输入框获取焦点时清空错误信息
+            $("input").focus(function () {
+                hideError(this.id);
+            });
+
+            //获取验证码
+            $("#messageCodeBtn").click(function () {
+                $phone.blur();
+                $loginPassword.blur();
+                if ($("div[id$=Err]").text()) {
+                    return;
+                }
+
+                $.ajax({
+                    url:"/register/getMessageCode",
+                    data:{"phone":$phone.val()},
+                    success:function (data) {
+                        if (data.code === 1) {
+                            alert("获取验证码成");
+                        }
+                    }
+                });
+
+            });
+
+            //点击注册按钮，密码进行md5加密
+            $("#btnRegist").click(function () {
+                $phone.blur();
+                $loginPassword.blur();
+
+                //手机号，密码是否合法
+                if ($("div[id$=Err]").text()) {
+                    return;
+                }
+
+
+                //检查验证码是否正确
+                $.ajax({
+                    url: "/register/checkMessageCode",
+                    data: {
+                        "phone": $phone.val(),
+                        "loginPassword": $loginPassword.val()
+                    },
+                    success: function (data) {
+                        if (data.code === 1) {
+                            //验证码正确,进行添加用户操作
+                            $.ajax({
+                                url: "/user/register.do",
+                                data: {
+                                    "phone": $phone.val(),
+                                    "loginPassword": $.md5($loginPassword.val())
+                                },
+                                success: function (data) {
+                                    if (data.code === 1) {
+                                        //注册成功，跳转登录页面
+                                        window.location.href = "/loan/page/login";
+                                    } else {
+                                        showError("phone", data.msg);
+                                    }
+                                },
+                                error: function () {
+                                    showError("phone", "网络繁忙，请稍后再试2");
+                                }
+                            });
+                        } else {
+                            showError("messageCode", data.msg);
+                        }
+                    },
+                    error: function () {
+                        showError("messageCode", "网络繁忙，核对验证码失败");
+                    }
+                });
+
+
+            });
+
+            //回车等于点击注册
+            $(document).keydown(function (event) {
+                if (event.keyCode === 13) {
+                    $("#btnRegist").click();
+                }
+            })
+
+        });
+    </script>
+</head>
+
+<body>
+<div id="header">
+    <div th:include="commons/header :: html"></div>
+</div>
+
+<div class="login-body regBody">
+    <div class="mainBox">
+        <div class="homeWap">
+
+            <div class="reg-step">
+                <ul class="clearfix">
+                    <li>注册</li>
+                    <li class="none">实名认证</li>
+                    <li class="last">完成</li>
+                </ul>
+            </div>
+
+            <div class="login-cnt reg-body clearfix">
+                <div class="fl">
+                    <div class="reg-link">已有帐号？<a th:href="@{/loan/page/login}">登录</a></div>
+                    <div class="login-form reg-form">
+                        <h2>用户注册</h2>
+
+                        <div class="login-box clearfix" style="z-index:100;">
+                            <label>手机号</label>
+                            <input type="text" id="phone" name="phone" class="input_text" maxlength="11"
+                                   placeholder="请输入11位手机号码" autocomplete="off"/>
+                            <span id="phoneOk" class="ok" style="display:none;"></span>
+                            <div id="phoneErr" class="form-hint" style="display:none;"></div>
+                        </div>
+
+                        <div class="login-box clearfix " style="z-index:90;">
+                            <label>登录密码</label>
+                            <input type="password" id="loginPassword" name="loginPassword" class="input_text"
+                                   maxlength="20" placeholder="请输入6-20位英文和数字混合密码" autocomplete="off"/>
+                            <span id="loginPasswordOk" class="ok" style="display:none;"></span>
+                            <div id="loginPasswordErr" class="form-hint" style="display:none;z-index:90;"></div>
+                        </div>
+
+                        <div class="login-box clearfix" style="z-index:60;">
+                            <label>&nbsp;</label>
+                            <div class="yzm-box">
+                                <input id="messageCode" type="text" class="yzm" placeholder="获取短信验证码"/>
+                                &nbsp;&nbsp;
+                                <button type="button" class="testBtn-a" id="messageCodeBtn">获取验证码</button>
+                            </div>
+                            <span id="messageCodeOk" class="ok" style="display:none;"></span>
+                            <div id="messageCodeErr" class="form-hint" style="display:none;"></div>
+                        </div>
+
+                        <div class="remember" style="z-index:60;">
+                <span class="on">
+                <input id="agree" name="agree" type="checkbox"/>我已阅读并同意<a
+                        href="javascript:alertBox('mask','agreement');"><font
+                        style="color: red;">《动力金融网&trade;注册服务协议》</font></a>
+                </span>
+                        </div>
+
+                        <div class="bn-login">
+                            <button class="fail" id="btnRegist">
+                                注&nbsp;&nbsp;册
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="reg-right">
+                    <div class="reg-txt clearfix">
+                        <p>
+                            万名用户知心托付<br/>
+                            千万级技术研发投入<br/>
+                        </p>
+                        <p>
+                            12.7%历史年化收益<br/>
+                            亿级注册资本平台
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--页脚start-->
+<div th:include="commons/footer :: html"></div>
+<!--页脚end-->
+
+<!--遮罩层start-->
+<div id="mask" class="dialog-overlay" style="display:none;"></div>
+<!--遮罩层end-->
+
+</body>
+</html>
